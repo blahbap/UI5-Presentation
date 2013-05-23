@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>UI5 CVOM HTML5 Charts - sap.service.visualization</title>
+
+    <script id="sap-ui-bootstrap"
+        type="text/javascript"
+        src="../../lib/sapui5/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_goldreflection"
+        data-sap-ui-libs="sap.service.visualization"></script>
+        
+    <script>
+    
+    try{
+    	sap.ui.getCore().loadLibrary("sap.ui.commons");
+    }catch(e){
+    	alert("This test page requires the library 'sap.ui.commons' which is not available.");
+    	throw(e);
+    }
+    try{
+    	sap.ui.getCore().loadLibrary("sap.ui.table");
+    }catch(e){
+    	alert("This test page requires the library 'sap.ui.table' which is not available.");
+    	throw(e);
+    }
+    try{
+    	sap.ui.getCore().loadLibrary("sap.ui.ux3");
+    }catch(e){
+    	alert("This test page requires the library 'sap.ui.ux3' which is not available.");
+    	throw(e);
+    }
+    
+    
+    sap.ui.getCore().attachInitEvent(function() {
+    
+	    // Create the ux3 Shell
+	    var oShell = new sap.ui.ux3.Shell("myShell", {
+	        appTitle:"UI5 CVOM HTML5 Demo",                 // give a title
+	        worksetItems:[                                          // add some items to the top navigation
+	            new sap.ui.ux3.NavigationItem({key:"wi_home",text:"Graphs",subItems:[  // the "Home" workcenter also gets three sub-items
+	                new sap.ui.ux3.NavigationItem({key:"wi_home_line",text:"Line"}),                
+					new sap.ui.ux3.NavigationItem({key:"wi_home_pie",text:"Pie"}),
+					new sap.ui.ux3.NavigationItem({key:"wi_home_donut",text:"Donut"}),
+	                new sap.ui.ux3.NavigationItem({key:"wi_home_bar",text:"Bar"}),
+					new sap.ui.ux3.NavigationItem({key:"wi_home_column",text:"Column"}),
+					new sap.ui.ux3.NavigationItem({key:"wi_home_combi",text:"Combination"}),
+					new sap.ui.ux3.NavigationItem({key:"wi_home_table",text:"Table"})
+	            ]}),
+	            new sap.ui.ux3.NavigationItem({key:"wi_work",text:"Work"}),
+	            new sap.ui.ux3.NavigationItem({key:"wi_profile",text:"Profile"}),
+	            new sap.ui.ux3.NavigationItem({key:"wi_Play",text:"Play"})
+	        ],
+	        paneBarItems:[  // add also one item to the right-side PaneBar
+	            new sap.ui.core.Item({key:"pb_people",text:"People"})
+	        ],
+	        logout:function() { // create a handler function and attach it to the "logout" event
+	            alert("User wants to log out...");
+	        }
+	    });
+	    
+	    // also set some content for the side pane
+	    oShell.setPaneContent(new sap.ui.commons.Button({text:"This Button is in the Pane"}));
+		
+		var oBusinessData = [
+		         			{Country :"Canada",revenue:410.87,profit:-141.25},
+		         			{Country :"China",revenue:338.29,profit:133.82},
+		         			{Country :"France",revenue:487.66,profit:348.76},
+		         			{Country :"Germany",revenue:470.23,profit:217.29},
+		         			{Country :"India",revenue:170.93,profit:117.00},
+		         			{Country :"United States",revenue:905.08,profit:609.16}
+		         		];		
+		
+		// derive profit data from complete data
+		var oProfitData = jQuery.map(oBusinessData, function($) {
+			return { Country: $.Country, profit: $.profit};
+		});
+		
+		oModel = new sap.ui.model.json.JSONModel({businessData: oBusinessData, profitData: oProfitData});
+		
+		// all charts and the table share the same model, so we set it to a common parent, the shell
+		oShell.setModel(oModel);
+		
+	    // Page content creation - for each workset the content is defined here 
+	    // For demo purposes there is just one button on each page
+	    var mContent = {}; // a map to remember page content once it is created
+	    function getContent(key) {
+	        if (mContent[key]) return mContent[key]; // if content is already created, return it directly
+	    	
+	        if (key == "wi_home_pie" || key == "wi_home_donut" ) {
+	        	
+				var pie = new sap.service.visualization.chart.Pie(key == "wi_home_pie" ? "myPie" : "myDonut", {
+					width: "700px",
+					height: "400px",
+				  	allDeSelectable: true,
+				  	legendFirst: true,
+					selectionMode: 'single',
+					legendDirection: 'right',
+					title: key == "wi_home_pie" ? 'Revenue By Country' : 'Profit By Country', // changed by UI5 (consistency)
+				  	titleHorizontalAlign:'center',
+					subTitle: 'Q1 - 2012',
+				  	subTitleHorizontalAlign:'center',
+					showTitle: true,
+					defaultSelectedSliceIndexes: key == "wi_home_pie" ? [5] : [4],
+				  	legendFormatString: ['0.00%'],
+//		    		titleFormatString:'0.00%',// to be implemented
+//		    		subTitleFormatString:'0.00%',// to be implemented
+		    		tooltipTextFormatString: ['0.00%'],
+		    		tooltipMainValueFormatString : ['#,##0.00€'], // changed by UI5 (consistency)
+		    		tooltipSubValueFormatString : ['0.00%'],
+					showLegend: true,
+					pieType: key == "wi_home_pie" ? 'pie' : 'donut',
+					dataset: new sap.service.visualization.dataset.SimpleDMDataset({
+						tabularData : key == "wi_home_pie" ? "{/businessData}" : "{/profitData}"
+					})
+				});
+	              
+				mContent[key] = pie;
+	                
+	        } else if (key == "wi_home_bar") {
+				var bar = new sap.service.visualization.chart.Bar("myBar",{
+					width: "800px",
+					height: "400px",
+					deselectEnabled: true,
+					selectionMode: 'single',
+					title: 'Profit and Revenue By Country',
+					titleHorizontalAlign:'center',
+					subTitle: 'Q1 - 2012',
+					subTitleHorizontalAlign:'center',
+					showTitle: true,
+					showLegend: true,
+					legendDirection: 'left', // changed by UI5 (test coverage)
+					legendFirst: true,
+					legendFormatString: ['0.00%'],
+//					titleFormatString:'0.00%',// to be implemented
+//					subTitleFormatString:'0.00%',// to be implemented
+					defaultSelectedItems : [{
+										measureIndex : 1,
+										dimensionItemIndex : 1
+									}],
+					measures:[{
+						valueAxis: 0//should be valid index in your value axis (can be xAxis or yAxis)
+					}
+					],
+					xAxis:[{
+						showMajorTicks : true,// default value = false
+						showMinorTicks : true,// default value = false
+						title : 'Profit / Revenue', // changed by UI5 (consistency)
+						labelsFormatString:['#,##0'],
+						titleFormatString : '#,##0',
+						showTitle : true,// show or hide title // changed by UI5 (consistency)
+						gridLine : {
+							showMajor : true,        
+							showMinor : false,                                 
+							showSub : false
+						}
+					}],
+					yAxis:[{
+						showMajorTicks : false,// default value = false
+						showMinorTicks : false,// default value = false
+						title : 'Countries', // changed by UI5 (consistency)
+						labelsFormatString:['#,##0'],
+						titleFormatString : '#,##0',
+						showTitle : true,// show or hide title // changed by UI5 (consistency)
+						gridLine : {
+							showMajor : true, // changed by UI5 (consistency)
+							showMinor : false,                                 
+							showSub : false
+						}
+					}],
+					dataset: new sap.service.visualization.dataset.SimpleDMDataset({
+						tabularData : "{/businessData}"
+					})
+				});
+	
+				
+				mContent[key] = bar;
+	
+			} else if (key == "wi_home_line") {
+				var line = new sap.service.visualization.chart.Line("myLine",{
+					width: "700px",
+					height: "400px",
+					deselectEnabled: true,
+					selectionMode: 'single',
+					defaultSelectedItems : [{
+						measureIndex: 1,
+						dimensionItemIndex: 1
+					}],
+					title: 'Profit and Revenue By Country',
+					titleHorizontalAlign:'center',
+					subTitle: 'Q1 - 2012',
+					subTitleHorizontalAlign:'center',
+					showLegend: true,
+					showTitle: true,
+					legendFormatString : ['0.00%'],
+			//		titleFormatString:'0.00%',// to be implemented
+			//		subTitleFormatString:'0.00%',// to be implemented
+					legendDirection: 'top', // changed by UI5 (test coverage)
+					legendFirst: true,
+					measures: [{      
+								lineThickness: 2, // changed by UI5 (test coverage)
+								valueAxis: 0, //should be valid index in your value axis (can be xAxis or yAxis)
+								markerSymbol: 'circle'//circle|triangle|diamond
+							},
+							{      
+								lineThickness: 4, // changed by UI5 (test coverage)
+								valueAxis: 0, //should be valid index in your value axis (can be xAxis or yAxis)
+								markerSymbol: 'diamond'//circle|triangle|diamond  // changed by UI5 (test coverage)
+							}
+					],
+					lineMarkerAndThickness:{
+						lineMarkerSize: 11,
+						lineThickness: 2
+					},
+					xAxis:[{
+						showMajorTicks : false,// default value = false
+						showMinorTicks : false,// default value = false
+						title : 'Countries', // changed by UI5 (consistency)
+			            labelsFormatString:['#,##'],
+			            titleFormatString : '#,##',
+						showTitle : true,// show or hide title
+						showLabels : true,// show or hide labels
+						gridLine : {
+							showMajor : false,        
+							majorThickness : 1,
+							showMinor : false,                                 
+							minorThickness : 1,
+							showSub : false
+						}
+					}],
+					yAxis:[{
+						showMajorTicks : true,// default value = false
+						showMinorTicks : false,// default value = false
+						title : 'Revenue / Profit', // changed by UI5 (consistency)
+			            labelsFormatString:['#,##0'],// changed by UI5 (workaround for format '#,##', as there is a known issue in format utility)
+			            titleFormatString : '#,##',
+						showTitle : true,// show or hide title
+						gridLine : {
+							showMajor : true,        
+							majorThickness : 1,
+							showMinor : false,                                 
+							minorThickness : 1,
+							showSub : false
+						}
+					}],
+					dataset: new sap.service.visualization.dataset.SimpleDMDataset({
+						tabularData : "{/businessData}"
+					})
+				});
+
+				mContent[key] = line;
+				
+			} else if (key == "wi_home_combi") {
+				var combination = new sap.service.visualization.chart.Combination("combination",{
+					width : "800px",
+					height : "400px",
+					deselectEnabled: true,
+					selectionMode: 'single',
+					defaultSelectedItems : [{
+						measureIndex: 1,
+						dimensionItemIndex: 1
+					}],
+					title: 'Profit and Revenue By Country',
+					titleHorizontalAlign:'center',
+					subTitle: 'Q1 - 2012',
+					subTitleHorizontalAlign:'center',
+					showTitle: true,
+					showLegend : true,
+					legendDirection : 'bottom', // changed by UI5 (test coverage)
+					legendFirst : true,
+					legendFormatString : ['0.00%'],
+		//			titleFormatString:'0.00%',// to be implemented
+		//			subTitleFormatString:'0.00%',// to be implemented
+					measures : [
+								{
+									valueAxis : 0,
+									type:'bar'
+								},
+								{
+									markerSymbol:'triangle', // changed by UI5 (test coverage)
+									lineThickness : 3,
+									valueAxis : 1
+								}
+					],
+					xAxis : [ {
+						title : 'Countries', // changed by UI5 (consistency)
+						showTitle:true,// show or hide title
+						showMajorTicks : false,// default value = false
+		 	            showMinorTicks : false,// default value = false
+			            labelsFormatString:['#,##'],
+			            titleFormatString : '#,##',
+						gridLine : {
+							showMajor : false,        
+							showMinor : false,                                 
+							showSub : false
+						}
+					}],
+		            lineMarkerAndThickness:{
+		            	 lineMarkerSize: 13,
+		            	 lineThickness: 3
+		            },
+					yAxis : [ {
+						title : 'Revenue', // changed by UI5 (consistency)
+						showTitle:true,// show or hide title
+		 				showMajorTicks : true,// default value = false
+		 	            showMinorTicks : false,// default value = false
+			            labelsFormatString:['#,##0'], // changed by UI5 (workaround for format '#,##', as there is a known issue in format utility)
+		 	            titleFormatString : '#,##',
+						gridLine : {
+							showMajor : true,        
+							majorThickness : 2,
+							showMinor : false,                                 
+							minorThickness : 1,
+							showSub : false
+						}
+					},
+					{
+						title : 'Profit', // changed by UI5 (consistency)
+						showTitle:true,// show or hide title
+		  	            labelsFormatString:['#,##0'], // changed by UI5 (workaround for format '#,##', as there is a known issue in format utility)
+		   	            titleFormatString : '#,##0.00', // changed by UI5 (workaround for format '#,##', as there is a known issue in format utility)
+						gridLine : {
+							showMajor : false,        
+							majorThickness : 1,
+							showMinor : false,                                 
+							minorThickness : 1,
+							showSub : false
+						}
+				    }
+					],	
+					dataset: new sap.service.visualization.dataset.SimpleDMDataset({
+						tabularData : "{/businessData}"
+					})
+				});
+				
+				mContent[key] = combination;
+			
+			} else if (key == "wi_home_column") {
+
+				var column = new sap.service.visualization.chart.Column("myColumn",{
+			  		width: "800px",
+				    height: "400px",
+				    deselectEnabled: true,
+				    selectionMode: 'single',
+				    title: 'Profit and Revenue By Country',
+				    titleHorizontalAlign:'center',
+				    subTitle: 'Q1 - 2012',
+				    subTitleHorizontalAlign:'center',
+				    showTitle: true,
+				    showLegend: true,
+				    legendDirection: 'right',
+					legendFirst: true,
+					titleNumberFormat:'0.00%',
+					defaultSelectedItems : [{
+			        	measureIndex : 1,
+						dimensionItemIndex : 1
+					}],
+			        measures : [ {
+			        	valueAxis : 0,
+			            type : 'bar',
+			            fillColor : '#2ED7E0'
+			        }, {
+			        	valueAxis : 0,
+			            type : 'bar'
+			        } ],
+			        line : {
+			        	lineMarkerSize : 15,
+			            lineSize : 1
+			        },
+			        barMarker:{
+			        	barMarkerSize:11
+			        },
+			    	measure:{
+			   			visibilityChangeable: true
+			   		},
+					xAxis:[{
+						show : true,// show or hide axis and major ticks and minor ticks
+			            showMajorTicks : false,// default value = false
+			            showMinorTicks : false,// default value = false
+			            title : 'Countries', // changed by UI5 (consistency)
+			            labelsNumberFormat:['#,##0.00%'],
+			            titleFormatString : '#,##0.00%',
+			            showTitle : true,// show or hide title
+			            showLabels : true,// show or hide labels
+			            gridLine : {
+			            	showMajor : false,        
+			                majorThickness : '1',
+			                showMinor : false,                                 
+			                minorThickness : '1',
+			                showSub : false
+			    		}
+					}],
+					yAxis:[{
+						show : true,// show or hide axis and major ticks and minor ticks
+						showMajorTicks : false,// default value = false
+				        showMinorTicks : false,// default value = false
+			            title : 'Profit / Revenue', // changed by UI5 (consistency)
+			            labelsNumberFormat:['#,##0.00%'],
+			            titleFormatString : '#,##0.00%',
+			            showTitle : true,// show or hide title
+			            showLabels : true,// show or hide labels
+			            gridLine : {
+			            	showMajor : true,        
+			                majorThickness : '1',
+			                showMinor : false,                                 
+			                minorThickness : '1',
+			                showSub : false
+			    		}
+					}],
+					dataset: new sap.service.visualization.dataset.SimpleDMDataset({
+						tabularData : "{/businessData}"
+					})
+			  	});
+
+				mContent[key] = column;
+				
+			} else if (key == "wi_home_table" ) {
+
+				var oTable = new sap.ui.table.Table({
+					columns: [
+					    new sap.ui.table.Column({
+					    	label: "Country",
+					    	template: new sap.ui.commons.TextView({
+					    		text : "{Country}"
+					    	}),
+					    	sortProperty: "Country", 
+					    	filterProperty: "Country", 
+					    	width: "200px"
+					    }),
+					    new sap.ui.table.Column({
+					    	label: "profit",
+					    	template: new sap.ui.commons.TextView({
+					    		text : "{profit}"
+					    	}),
+					    	sortProperty: "profit", 
+					    	filterProperty: "profit", 
+					    	width: "200px"
+					    }),
+					    new sap.ui.table.Column({
+					    	label: "revenue",
+					    	template: new sap.ui.commons.TextView({
+					    		text : "{revenue}"
+					    	}),
+					    	sortProperty: "revenue", 
+					    	filterProperty: "revenue", 
+					    	width: "200px"
+					    })
+					],
+					rows : "{/businessData}",
+					visibleRowCount: 6
+				});
+				
+				mContent[key] = oTable;
+				
+	        }
+	        return mContent[key];       
+	    }
+	    
+	    // when the user selects a workset, put the respective content into the shell's main area
+	    oShell.attachWorksetItemSelected(function(oEvent) {
+	        var key = oEvent.getParameter("key");  
+			oShell.setContent(getContent(key));
+	    });
+	    
+	    // set the initial content of the Shell - the Home pie is selected initially
+	    oShell.addContent(getContent("wi_home_line"));
+	
+	    // place the Shell into the <div> element defined below
+	    oShell.placeAt("shellArea");
+    });
+    
+    </script>
+
+</head>
+<body class="sapUiBody">
+
+    <!-- This is where the Shell will live -->
+    <div id="shellArea"></div>
+
+</body>
+</html>
